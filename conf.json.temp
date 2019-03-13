@@ -1,0 +1,16 @@
+{
+    "from": {
+        "user": "",
+        "password": "",
+        "host": "",
+        "port": "",
+        "database": ""
+    },
+    "to": {
+        "user": "",
+        "password": "",
+        "host": "",
+        "port": ""
+    },
+    "rows_slice_len": 10
+}

@@ -1,0 +1,9 @@
+## For ubuntu:
+libmysqlclient-dev
+python-dev
+mysql-client-core-5.7
+docker
+docker.io
+
+## Other python requirements
+Check virtualenv.req

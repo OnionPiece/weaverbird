@@ -1,0 +1,97 @@
+from alembic import op
+import sqlalchemy as sa
+from sqlalchemy.dialects import mysql
+from sqlalchemy.ext.declarative import declarative_base
+{% for column in table.columns %}
+    {% if column.foreign_key %}
+from models import {{ column.foreign_key.split(".", 1)[0] }}
+    {% endif %}
+{% endfor %}
+
+Base = declarative_base()
+
+class {{ table.name[0].upper() + table.name[1:] }}(Base):
+    __tablename__ = '{{ table.name }}'
+
+{% for column in table.columns %}
+    {{ column.name }} = sa.Column(
+    {% if column.length %}
+        {{ column.type }}(length={{ column.length }}),
+    {% elif column.display_width %}
+        {{ column.type }}(display_width={{ column.display_width }}),
+    {% elif column.precision %}
+        {{ column.type }}(precision={{ column.precision}}, scale={{ column.scale }}),
+    {% else %}
+        {{ column.type }}(),
+    {% endif %}
+    {% if column.foreign_key %}
+        sa.ForeignKey({{ "%s.%s%s" % (column.foreign_key.split(".", 1)[0], column.foreign_key[0].upper(), column.foreign_key[1:]) }}),
+    {% endif %}
+    {% if column.is_primary_key %}
+        primary_key={{ column.is_primary_key }},
+    {% endif %}
+    {% if not column.nullable %}
+        nullable={{ column.nullable }},
+    {% endif %}
+    {% if column.default or column.default_arg %}
+        server_default={{ column.default_arg }},
+    {% endif %}
+    {% if column.auto_increment %}
+        autoincrement=({{ column.auto_increment }}),
+    {% endif %}
+    )
+{% endfor %}
+
+
+def create_table():
+    print "Create table {{ table.name }}..."
+    op.create_table(
+        '{{ table.name }}',
+{% for column in table.columns %}
+        sa.Column('{{ column.name }}',
+    {% if column.length %}
+            {{ column.type }}(length={{ column.length }}),
+    {% elif column.display_width %}
+            {{ column.type }}(display_width={{ column.display_width }}),
+    {% elif column.precision %}
+            {{ column.type }}(precision={{ column.precision}}, scale={{ column.scale }}),
+    {% else %}
+            {{ column.type }}(),
+    {% endif %}
+    {% if column.is_primary_key %}
+            primary_key={{ column.is_primary_key }},
+    {% endif %}
+    {% if not column.nullable %}
+            nullable={{ column.nullable }},
+    {% endif %}
+    {% if column.auto_increment %}
+            autoincrement=({{ column.auto_increment }}),
+    {% endif %}
+    {% if column.default or column.default_arg %}
+            server_default={{ column.default_arg }},
+    {% endif %}
+        ),
+{% endfor %}
+    )
+{% for column in table.columns %}
+    {% if column.foreign_key %}
+    op.create_foreign_key(
+        constraint_name='{{ table.name }}_fk_{{ column.foreign_key.split(".", 1)[0]}}_1', source_table='{{ table.name }}',
+        referent_table='{{ column.foreign_key.split(".", 1)[0] }}',
+        local_cols=['{{ column.name }}'], remote_cols=['{{ column.foreign_key.split(".", 1)[1] }}'],
+        {% if column.foreign_key_ondelete %}
+        ondelete='CASCADE'
+        {% endif %}
+    )
+    {% endif %}
+{% endfor %}
+
+
+def foreign_key_tables():
+    return [
+{% for column in table.columns %}
+    {% if column.foreign_key %}
+        "{{ column.foreign_key.split('.', 1)[0] }}",
+    {% endif %}
+{% endfor %}
+    ]
